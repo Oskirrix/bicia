@@ -1,0 +1,27 @@
+const GLOBAL_BICIE_URL = "https://twojserwer.render.com/bicie.json";
+const OKRES_BLOKADY_MS = 24*60*60*1000;
+const FRAZA_TYTAN = "Zabójczy Królik";
+const MAPA_CAERBANOGA = "Jaskinia Caerbannoga";
+const WEBHOOK_URL = "...twój webhook...";
+function czyNaJaskini() { const botloc=document.getElementById('botloc'); return botloc && botloc.getAttribute('tip')===MAPA_CAERBANOGA; }
+function zbudujWiadomosc(nazwa,lista){ return `**${nazwa}**\n`+lista.map((nick,i)=>`${i+1}. ${nick}`).join('\n'); }
+function wyslijWebhook(tresc){ fetch(WEBHOOK_URL,{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({content:tresc}) }); }
+
+function sprawdzIBicieGlobalne(lista1, lista2){
+  fetch(GLOBAL_BICIE_URL)
+    .then(r=>r.json())
+    .then(data=>{
+      const teraz = Date.now();
+      if((teraz - data.timestamp)>OKRES_BLOKADY_MS){
+         const nr = data.last===1 ? 2 : 1;
+         const lista = nr===1 ? lista1 : lista2;
+         wyslijWebhook(zbudujWiadomosc(`Bicie ${nr}`, lista));
+         fetch(GLOBAL_BICIE_URL,
+           { method: "PUT",
+             headers: {"Content-Type":"application/json"},
+             body: JSON.stringify({last:nr, timestamp:teraz})
+          });
+      }
+      // Jesli nie minelo 24h, nie wysyla
+    });
+}
