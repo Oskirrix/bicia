@@ -1,8 +1,8 @@
 // index.js
-const express = require('express');
-const fs = require('fs-extra');
-const path = require('path');
-const fetch = require('node-fetch'); // do wysyłania webhooka
+import express from 'express';
+import fs from 'fs-extra';
+import path from 'path';
+import fetch from 'node-fetch'; // do wysyłania webhooka
 
 const app = express();
 app.use(express.json());
