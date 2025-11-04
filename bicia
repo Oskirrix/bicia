@@ -1,27 +1,51 @@
-const GLOBAL_BICIE_URL = "https://twojserwer.render.com/bicie.json";
-const OKRES_BLOKADY_MS = 24*60*60*1000;
-const FRAZA_TYTAN = "Zabójczy Królik";
-const MAPA_CAERBANOGA = "Jaskinia Caerbannoga";
-const WEBHOOK_URL = "...twój webhook...";
-function czyNaJaskini() { const botloc=document.getElementById('botloc'); return botloc && botloc.getAttribute('tip')===MAPA_CAERBANOGA; }
-function zbudujWiadomosc(nazwa,lista){ return `**${nazwa}**\n`+lista.map((nick,i)=>`${i+1}. ${nick}`).join('\n'); }
-function wyslijWebhook(tresc){ fetch(WEBHOOK_URL,{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({content:tresc}) }); }
+// index.js
+const express = require('express');
+const fs = require('fs-extra');
+const path = require('path');
+const fetch = require('node-fetch'); // do wysyłania webhooka
 
-function sprawdzIBicieGlobalne(lista1, lista2){
-  fetch(GLOBAL_BICIE_URL)
-    .then(r=>r.json())
-    .then(data=>{
-      const teraz = Date.now();
-      if((teraz - data.timestamp)>OKRES_BLOKADY_MS){
-         const nr = data.last===1 ? 2 : 1;
-         const lista = nr===1 ? lista1 : lista2;
-         wyslijWebhook(zbudujWiadomosc(`Bicie ${nr}`, lista));
-         fetch(GLOBAL_BICIE_URL,
-           { method: "PUT",
-             headers: {"Content-Type":"application/json"},
-             body: JSON.stringify({last:nr, timestamp:teraz})
-          });
-      }
-      // Jesli nie minelo 24h, nie wysyla
-    });
-}
+const app = express();
+app.use(express.json());
+
+const DATA_FILE = path.join(__dirname, 'bicie.json'); // {last, timestamp}
+const GRUPY = [
+  ["Verun","Szonyto","Kobrak","Lootfilter","Obajtek","Dzikie Oko","Janeczek","Zupa","Natural","Szjawir"],
+  ["Kuchar","Szonyto","Kobrak","Lother","Obajtek","Wieszak","Janeczek","Zupa","Domci","Zdenek"],
+  ["Verun","Szonyto","Kobrak","Wieszak","Obajtek","Dzikie Oko","Janeczek","Zupa","Natural","Szjawir"],
+  ["Kuchar","Szonyto","Kobrak","Lother","Obajtek","Lootfilter","Janeczek","Zupa","Domci","Zdenek"]
+];
+const WEBHOOK_URL = "TU_WSTAW_ULR_WEBHOOK";
+const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24h
+
+app.post('/api/bicie', async (req, res) => {
+  // 1. Pobierz ostatni stan
+  let data = { last: 4, timestamp: 0 };
+  try { data = await fs.readJson(DATA_FILE); } catch {}
+  const teraz = Date.now();
+  // 2. Sprawdź czy minął cooldown
+  if (teraz - data.timestamp < COOLDOWN_MS) {
+    return res.json({ ok: false, msg: 'Bicie już wysłane dzisiaj', grupa: data.last });
+  }
+  // 3. Zmień grupę naprzemiennie
+  const nrNowe = data.last % 4 + 1;
+  const grupaNowa = GRUPY[nrNowe - 1];
+  // 4. Wyślij wiadomość na Discord
+  const tresc = `Bicie ${nrNowe}:\n` + grupaNowa.map((osoba,i)=>`${i+1}. ${osoba}`).join('\n');
+  await fetch(WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content: tresc })
+  });
+  // 5. Zapisz nowy stan
+  await fs.writeJson(DATA_FILE, { last: nrNowe, timestamp: teraz });
+  res.json({ ok: true, grupa: nrNowe });
+});
+
+app.get('/api/bicie', async (req, res) => {
+  let data = { last: 4, timestamp: 0 };
+  try { data = await fs.readJson(DATA_FILE); } catch {}
+  res.json(data);
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('Bicie backend działa na porcie', PORT));
