@@ -2,12 +2,14 @@ import express from 'express';
 import fs from 'fs-extra';
 import path from 'path';
 import fetch from 'node-fetch';
+import cors from 'cors';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.use(cors()); // <--- Dla Tampermonkey/globalnego fetch()
 app.use(express.json());
 
 const DATA_FILE = path.join(__dirname, 'bicie.json');
