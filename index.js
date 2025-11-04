@@ -20,7 +20,7 @@ const GRUPY = [
   ["Kuchar","Szonyto","Kobrak","Lother","Obajtek","Lootfilter","Janeczek","Zupa","Domci","Zdenek"]
 ];
 // PODMIEN na swój webhook Discord:
-const WEBHOOK_URL = "TU_WSTAW_ULR_WEBHOOK";
+const WEBHOOK_URL = "https://discord.com/api/webhooks/1433470551128543313/E_ZhPIkiSjnWu8zqQ8wgZm9gFNv7C1IvXGkeVentwWhfcmrGpygvaNYvJAY9IQvHHoMi";
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 app.post('/api/bicie', async (req, res) => {
